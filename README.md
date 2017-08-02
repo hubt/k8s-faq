@@ -2,7 +2,7 @@
 
 This is a random collection of questions and answers I've collected about running and operating Kubernetes clusters (primarily on AWS). New questions and answers are welcome.
 
-#Contents:
+# Contents:
 
 [Architecture](#architecture)
 - [What happens when a master fails? What happens when a worker fails?](#what-happens-when-a-master-fails-what-happens-when-a-worker-fails)
