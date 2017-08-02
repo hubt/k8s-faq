@@ -170,6 +170,8 @@ This occurs due to a race condition during pod deletion between the Ingress and 
 
 The simplest way to avoid this is to prevent the pod from shutting down immediately with a `preStop` hook. Adding in a `preStop` hook to the deployment which does `sleep 5` should delay the pod termination long enough to let the Ingress update and remove the disabled pod from its upstream list.
 
+YMMV with the `sleep` time. Out of date Nginx workers die when their last connection completes; essentially connection draining. Depending on your implementation (Keep-Alive, traffic volume, etc.) the time to sleep may be much higher (~30s). In this case the effect of the sleep and rollout of new pods is similar to a "blue-green" deployment: new pods are serving requests while the old workers drain connections to the old pods, after which they time out and are killed.
+
 https://github.com/kubernetes/kubernetes/issues/43576
 https://github.com/kubernetes/ingress/issues/322
 https://github.com/kubernetes/contrib/issues/1140
