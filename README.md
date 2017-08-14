@@ -58,7 +58,7 @@ This is a random collection of questions and answers I've collected about runnin
 - [Is there a way to update route53 DNS with a service members?](#is-there-a-way-to-update-route53-dns-with-a-service-members)
 - [Can Kubernetes auto-create an EBS volume?](#can-kubernetes-auto-create-an-ebs-volume)
 - [When using an EBS PersistentVolume and PersistentVolumeClaim, how does Kubernetes know which AZ to create a pod in?](#when-using-an-ebs-persistentvolume-and-persistentvolumeclaim-how-does-kubernetes-know-which-az-to-create-a-pod-in)
-- [Does Kubernetes support the new Amazon Load Balancer (ALB)?](#does-kubernetes-support-the-new-amazon-load-balancer-alb)
+- [Does Kubernetes support the new AWS App Load Balancer (ALB)?](#does-kubernetes-support-the-new-aws-app-load-balancer-alb)
 - [Is there a way to give a pod a separate IAM role that has different permissions than the default instance IAM policy?](#is-there-a-way-to-give-a-pod-a-separate-iam-role-that-has-different-permissions-than-the-default-instance-iam-policy)
 - [Is Kubernetes rack aware or can you detect what region or Availability Zone a host is in?](#is-kubernetes-rack-aware-or-can-you-detect-what-region-or-availability-zone-a-host-is-in)
 - [Is it possible to install Kubernetes into an existing VPC?](#is-it-possible-to-install-kubernetes-into-an-existing-vpc)
@@ -83,12 +83,12 @@ Learn more: http://kubernetes.io/docs/admin/high-availability/#master-elected-co
 
 ## Can I isolate namespaces from each other?
 
-Yes, network policies allow you to isolate namespaces at the network layer. Full isolation requires use of an overlay network such as Flannel, Calico, Weave, or Romana. 
+Yes, network policies allow you to isolate namespaces at the network layer. Full isolation requires use of an overlay network such as Flannel, Calico, Weave, or Romana.
 http://kubernetes.io/docs/user-guide/networkpolicies/
 
 # Basic usage questions:
 
-## Should I use Replication Controllers? 
+## Should I use Replication Controllers?
 
 Probably not, they are older and have fewer features than the newer Deployment objects.
 
@@ -98,9 +98,9 @@ Use `kubectl get deployment <deployment>`. If the `DESIRED`, `CURRENT`, `UP-TO-D
 
 ## How do I update all my pods if the image changed but the tag is the same
 
-Make sure your `imagePullPolicy` is set to `Always`(this is the default). That means when a pod is deleted, a new pod will ensure it has the current version of the image. Then refresh all your pods. 
+Make sure your `imagePullPolicy` is set to `Always`(this is the default). That means when a pod is deleted, a new pod will ensure it has the current version of the image. Then refresh all your pods.
 
-The simplest way to refresh all your pods is to just delete them and they will be recreated with the latest image. This immediately destroys all your pods which will cause a service outage. Do this with `kubectl delete pod -l <name>=<value>` where name and value are the label selectors your deployment uses. 
+The simplest way to refresh all your pods is to just delete them and they will be recreated with the latest image. This immediately destroys all your pods which will cause a service outage. Do this with `kubectl delete pod -l <name>=<value>` where name and value are the label selectors your deployment uses.
 
 A better way is to edit your deployment and modify the deployment pod spec to add or change any annotation. This will cause all your pods to be deleted and rescheduled, but this method will also obey your `rollingUpdate` strategy, meaning no downtime assuming your `rollingUpdate` strategy already behaves properly. Setting a timestamp or a version number is convenient, but any change to pod annotations will cause a rolling update. For a deployment named nginx, this can be done with:
 ```
@@ -115,7 +115,7 @@ It is considered bad practice to rely on the `:latest` docker image tag in your 
 A `Pending` pod is one that cannot be scheduled onto a node.  Doing a `kubectl describe pod <pod>` will usually tell you why. `kubectl logs <pod>` can also be helpful. There are several common reasons for pods stuck in Pending:
 
 ** The pod is requesting more resources than are available, a pod has set a `request` for an amount of CPU or memory that is not available anywhere on any node. eg. requesting a 8 CPU cores when all your nodes only have 4 CPU cores. Doing a `kubectl describe node <node>` on each node will also show already requested resources.
-** There are `taint`s that prevent a pod from scheduling on your nodes. 
+** There are `taint`s that prevent a pod from scheduling on your nodes.
 ** The nodes have been marked unschedulable with `kubectl cordon`
 ** There are no `Ready` nodes. `kubectl get nodes` will display the status of all nodes.
 
@@ -136,7 +136,7 @@ Another common reason is that a node is failing its health check and has been ki
 
 ## How do I rollback a Deployment?
 
-If you apply a change to a Deployment with the `--record` flag then Kubernetes stores the previous Deployment in its history. The `kubectl rollout history deployment <deployment>` command will show prior Deployments. The last Deployment can be restored with the `kubectl rollout undo deployment <deployment>` command. In progress Deployments can also be paused and resumed. 
+If you apply a change to a Deployment with the `--record` flag then Kubernetes stores the previous Deployment in its history. The `kubectl rollout history deployment <deployment>` command will show prior Deployments. The last Deployment can be restored with the `kubectl rollout undo deployment <deployment>` command. In progress Deployments can also be paused and resumed.
 
 When a new version of a Deployment is applied, a new ReplicaSet object is created which is slowly scaled up while the old ReplicaSet is scaled down. You can look at each ReplicaSet that has been rolled out with `kubectl get replicaset`. Each ReplicaSet is named with the format <deployment>-<pod-template-hash>, so you can also do `kubectl describe replicaset <replicaset>`.
 
@@ -144,13 +144,13 @@ Learn more: http://kubernetes.io/docs/user-guide/kubectl/kubectl_rollout/
 
 ## What is a DaemonSet?
 
-A DaemonSet is a set of pods that is run only once on a host. It's used for host-layer features, for instance a network, host monitoring or storage plugin or other things which you would never want to run more than once on a host. 
+A DaemonSet is a set of pods that is run only once on a host. It's used for host-layer features, for instance a network, host monitoring or storage plugin or other things which you would never want to run more than once on a host.
 
 Learn more: http://kubernetes.io/docs/admin/daemons/
 
 ## What is a PetSet or StatefulSet?
 
-In a regular Deployment all the instances of a pod are exactly the same, they are indistinguishable and are thus sometimes referred to as "cattle", these are typically stateless applications that can be easily scaled up and down. In a PetSet, each pod is unique and has an identity that needs to be maintained. This is commonly used for more stateful applications like databases. 
+In a regular Deployment all the instances of a pod are exactly the same, they are indistinguishable and are thus sometimes referred to as "cattle", these are typically stateless applications that can be easily scaled up and down. In a PetSet, each pod is unique and has an identity that needs to be maintained. This is commonly used for more stateful applications like databases.
 
 Learn more: http://kubernetes.io/docs/user-guide/petset/
 
@@ -160,7 +160,7 @@ Learn more: http://kubernetes.io/docs/tutorials/stateful-application/basic-state
 
 ## What is an Ingress Controller?
 
-An Ingress Controller is a pod that can act as an inbound traffic handler. It is a HTTP reverse proxy that is implemented as a somewhat customizable nginx. Among the features are HTTP path and service based routing and SSL termination. 
+An Ingress Controller is a pod that can act as an inbound traffic handler. It is a HTTP reverse proxy that is implemented as a somewhat customizable nginx. Among the features are HTTP path and service based routing and SSL termination.
 
 Learn more: http://kubernetes.io/docs/user-guide/ingress/
 
@@ -211,13 +211,13 @@ https://github.com/coreos/kubernetes/blob/master/docs/design/taint-toleration-de
 
 Kubernetes by default does attempt node anti-affinity, but it is not a hard requirement, it is best effort, but will schedule multiple pods on the same node if that is the only way.
 
-Learn more: 
+Learn more:
 http://stackoverflow.com/questions/28918056/does-the-kubernetes-scheduler-support-anti-affinity
 http://kubernetes.io/docs/user-guide/node-selection/
 
 ## How can I get the host IP address from inside a pod?
 
-In Kubernetes 1.4 the nodename is available in the downward API in the `spec.nodeName` variable. 
+In Kubernetes 1.4 the nodename is available in the downward API in the `spec.nodeName` variable.
 
 http://kubernetes.io/docs/user-guide/downward-api/
 
@@ -298,7 +298,7 @@ Yes. The two tricks are:
 
 Your pod must run in privileged mode. kubelet must run with `--allow-privileged=true`(this is the default) and the pod must run with `securityContext.privileged: true`. This will allow your pod to mount the host docker socket directly.  
 
-You must mount the host docker socket by specifying `volumes.hostPath.path: /var/run/docker.sock` in your pod spec. 
+You must mount the host docker socket by specifying `volumes.hostPath.path: /var/run/docker.sock` in your pod spec.
 
 Here is a simple alpine docker deployment which can run docker commands:
 ```
@@ -367,7 +367,7 @@ In addition to regular EC2 ip addresses, Kubernetes creates its own cluster inte
 
 ## How do I add a node to my AWS Kubernetes cluster?
 
-If you used `kube-up.sh` or `kops` to provision your cluster, then it created an AutoScaling Group automatically. You can re-scale that with kops, or update the ASG directly, to grow/shrink the cluster. New instances are provisioned for you and should join the cluster automatically (my experience has been it takes 5-7 minutes for nodes to join). 
+If you used `kube-up.sh` or `kops` to provision your cluster, then it created an AutoScaling Group automatically. You can re-scale that with kops, or update the ASG directly, to grow/shrink the cluster. New instances are provisioned for you and should join the cluster automatically (my experience has been it takes 5-7 minutes for nodes to join).
 
 With `kops` the recommended process is to edit the InstanceGroup (ig) and then update your cluster. `kops` also supports multiple instance groups per cluster so you can have multiple Auto Scaling Groups to run multiple types of instances within your cluster. Spot instances are also supported.
 
@@ -450,9 +450,10 @@ And the PersistentVolumeClaim will automatically create a volume for you and del
 
 It just works. EBS volumes are specific to an Availability Zone, and Kubernetes knows which AZ a volume is in. When a new pod needs that volume it the pod is  automatically scheduled in the Availability Zone of the volume.
 
-## Does Kubernetes support the new Amazon Load Balancer (ALB)?
+## Does Kubernetes support the new AWS App Load Balancer (ALB)?
 
-Not currently.
+Support for AWS ALB Ingress Controller available with CoreOS distribution of Kubernetes (Tectonic).
+This effort is available at this repository: https://github.com/coreos/alb-ingress-controller
 
 ## Is there a way to give a pod a separate IAM role that has different permissions than the default instance IAM policy?
 
@@ -476,4 +477,3 @@ With kops, this is possible. But having more than one Kubernetes cluster in a VP
 ## Is it possible to install Kubernetes into a private VPC?
 
 With kops 1.5, this is possible. There are features like private subnets, NAT Gateways, bastion hosts.
-
